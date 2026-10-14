@@ -1,0 +1,17 @@
+# Python / Jupyter
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Database (rebuild with: python sql/load_data.py)
+nhl.db
+nhl.db-journal
+
+# Raw Kaggle CSVs are too large for GitHub. Keep only the three this project uses.
+data/*.csv
+!data/game.csv
+!data/game_teams_stats.csv
+!data/team_info.csv
