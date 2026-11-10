@@ -15,3 +15,6 @@ data/*.csv
 !data/game.csv
 !data/game_teams_stats.csv
 !data/team_info.csv
+
+# Layout reference screenshot (another site; never commit)
+reference/
