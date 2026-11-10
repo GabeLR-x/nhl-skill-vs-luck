@@ -92,7 +92,7 @@ st.markdown(
     .forecast .lab {{ color: {MUTED}; font-size: 0.9rem; }}
     .dot {{ display: inline-block; width: 0.8em; height: 0.8em; border-radius: 50%;
             margin-right: 0.4em; vertical-align: 0.05em; border: 1px solid #ffffff55; }}
-    .spot {{ font-size: 1.05rem; line-height: 1.55; }}
+    .spot {{ font-size: 1.05rem; line-height: 1.55; margin-top: 0.9rem; }}
     </style>
     """,
     unsafe_allow_html=True,
@@ -267,7 +267,7 @@ with tab_card:
             if card_season < 20162017:
                 st.caption("This season was part of the model's training data, so the forecast is in-sample.")
 
-        st.markdown(f'<p class="spot">{spotlight_sentence(row, typical)}</p>', unsafe_allow_html=True)
+        st.markdown(f'<div class="spot" style="padding-top:0.9rem">{spotlight_sentence(row, typical)}</div>', unsafe_allow_html=True)
 
     with st.container(border=True):
         st.markdown("**Percentiles over the surrounding seasons**")
