@@ -3,18 +3,19 @@
 Run from the NHL project folder:
     streamlit run dashboard/app.py
 """
-import sqlite3
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
 
-DB_PATH = Path(__file__).resolve().parent.parent / "nhl.db"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import nhl  # noqa: E402
+from nhl import season_label  # noqa: E402
 
 # Chart colors: one blue for single series; blue <-> red for up/down
 BLUE = "#2a78d6"
@@ -27,52 +28,10 @@ st.set_page_config(page_title="NHL: Skill vs. Luck", page_icon="🏒", layout="w
 # ---------------------------------------------------------------------------
 # Data
 # ---------------------------------------------------------------------------
-def season_label(season):
-    s = str(int(season))
-    return f"{s[:4]}-{s[6:]}"
-
-
 @st.cache_data
 def load_data():
-    conn = sqlite3.connect(DB_PATH)
-
-    # One row per team per full 82-game season, with both sides of the puck
-    teams = pd.read_sql(
-        """
-        SELECT us.team_id, game.season,
-               COUNT(*)                     AS games,
-               SUM(us.won) * 1.0 / COUNT(*) AS win_rate,
-               SUM(us.shots)                AS shots_for,
-               SUM(them.shots)              AS shots_against,
-               SUM(us.goals)                AS goals_for,
-               SUM(them.goals)              AS goals_against
-        FROM game_teams_stats AS us
-        JOIN game_teams_stats AS them
-            ON us.game_id = them.game_id
-           AND us.team_id <> them.team_id
-        JOIN game ON us.game_id = game.game_id
-        WHERE game.type = 'R'
-        GROUP BY us.team_id, game.season
-        HAVING COUNT(*) = 82
-        """,
-        conn,
-    )
-    names = pd.read_sql("SELECT team_id, teamName AS team FROM team_info", conn)
-    conn.close()
-
-    teams = teams.merge(names, on="team_id")
-    teams["shot_share"] = teams.shots_for / (teams.shots_for + teams.shots_against)
-    teams["shooting_pct"] = teams.goals_for / teams.shots_for
-    teams["save_pct"] = 1 - teams.goals_against / teams.shots_against
-    teams["pdo"] = teams.shooting_pct + teams.save_pct
-    teams["next_season"] = teams.season + 10001
-
-    # Attach the same team's next season, where one exists
-    nxt = teams[["team_id", "season", "win_rate", "shot_share", "pdo"]].rename(
-        columns={"season": "next_season", "win_rate": "win_rate_next",
-                 "shot_share": "shot_share_next", "pdo": "pdo_next"}
-    )
-    teams = teams.merge(nxt, on=["team_id", "next_season"], how="left")
+    teams = nhl.add_rates(nhl.team_seasons(nhl.load_raw()))
+    teams = nhl.attach_next_season(teams)
     teams["label"] = teams.team + " " + teams.season.map(season_label)
     return teams
 
@@ -80,11 +39,10 @@ def load_data():
 @st.cache_data
 def fit_forecast(teams):
     """Same model as the notebook: trained on pairs whose next season is 2016-17 or earlier."""
-    pairs = teams.dropna(subset=["win_rate_next"])
-    train = pairs[pairs.next_season <= 20162017]
-    model = LinearRegression().fit(train[["win_rate", "shot_share"]], train.win_rate_next)
+    train, _ = nhl.train_test_split_by_season(teams.dropna(subset=["win_rate_next"]))
+    model = nhl.fit_forecast(train)
     out = teams.copy()
-    out["forecast"] = model.predict(out[["win_rate", "shot_share"]])
+    out["forecast"] = model.predict(out[nhl.FEATURES])
     out["forecast_change_wins"] = (out.forecast - out.win_rate) * 82
     out["actual_change_wins"] = (out.win_rate_next - out.win_rate) * 82
     return out, model.coef_, model.intercept_
