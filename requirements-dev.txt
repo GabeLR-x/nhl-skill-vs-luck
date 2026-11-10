@@ -1,0 +1,5 @@
+# Notebooks and tests, on top of the dashboard's requirements.
+-r requirements.txt
+matplotlib==3.9.4
+jupyter==1.1.1
+pytest==8.4.2
