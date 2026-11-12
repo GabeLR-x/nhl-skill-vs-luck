@@ -1,5 +1,7 @@
 # NHL: Which Records Are Real, and Which Are Luck?
 
+This is a personal project I worked on to see how lucky an NHL team can get and how that luck affects their performance the next season.
+
 **About a third of the spread in NHL team records is luck, and a two-input model that accounts for it forecasts next season's wins 20% more accurately than "same as last year".**
 
 **Live demo:** _coming soon (Streamlit Community Cloud link)_
